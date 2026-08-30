@@ -4,23 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111827">
-  <title>LAST CALL — дело о пропавшем паспорте</title>
+  <title>LAST CALL — дело о пропавших документах</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main class="shell">
     <section id="intro" class="intro-card">
       <div class="intro-art">
-        <img src="assets/cole-airport.svg" alt="Мистер Коул в аэропорту">
+        <img class="case-hero" src="assets/mr-cole-airport-hero.png" alt="Мистер Коул в аэропорту Сиднея перед вылетом в Москву">
       </div>
       <div class="intro-copy">
-        <p class="eyebrow">ИНТЕРАКТИВНЫЙ AI-КВЕСТ ДЛЯ УЧИТЕЛЕЙ</p>
+        <p class="eyebrow">ИНТЕРАКТИВНЫЙ ДЕТЕКТИВНЫЙ КВЕСТ ДЛЯ УЧИТЕЛЕЙ</p>
         <h1>LAST CALL</h1>
-        <p class="subtitle">Дело о пропавшем паспорте мистера Коула</p>
-        <p class="story">Мистер Коул — учитель из Австралии, который обожает путешествовать. Сегодня он летит в Россию преподавать. Паспортный контроль пройден, но у выхода на посадку паспорт исчез.</p>
+        <p class="subtitle">Дело о пропавших документах мистера Коула</p>
+        <p class="story">Мистер Коул — учитель из Австралии, который обожает путешествовать. Сегодня он летит в Россию, но не просто так, а преподавать английский. Паспортный контроль пройден, но у выхода на посадку Коул обнаруживает, что его паспорт и посадочный талон исчезли.</p>
         <div class="case-facts">
-          <div><span>Последний подтверждённый факт</span><strong>16:03 — паспорт был у Коула</strong></div>
-          <div><span>До закрытия посадки</span><strong>37 минут</strong></div>
+          <div><span>Последний подтверждённый факт</span><strong>16:03 — документы были у Коула</strong></div>
+          <div><span>Текущий выход</span><strong>B27 — рейс в Москву</strong></div>
+          <div><span>До закрытия посадки</span><strong>37 минут • до 17:17</strong></div>
         </div>
         <button id="startGame" class="primary-btn" type="button">Начать расследование</button>
         <button id="resumeGame" class="ghost-btn hidden" type="button">Продолжить текущую игру</button>
@@ -30,8 +31,8 @@
     <section id="game" class="game hidden" aria-live="polite">
       <header class="game-header">
         <div>
-          <p class="eyebrow">CASE MC-617</p>
-          <h2>Дело о пропавшем паспорте</h2>
+          <p class="eyebrow">CASE LC-37</p>
+          <h2>Дело о пропавших документах</h2>
         </div>
         <div class="timer-box" aria-label="Оставшееся время">
           <span>BOARDING CLOSES IN</span>
@@ -41,8 +42,8 @@
 
       <div class="game-grid">
         <aside class="cole-panel">
-          <img src="assets/cole-airport.svg" alt="Мистер Коул в аэропорту">
-          <div class="speech" id="coleSpeech">«Я точно проходил контроль с паспортом. После этого я не выходил из терминала.»</div>
+          <div class="cole-game-art"><img class="case-hero" src="assets/mr-cole-airport-hero.png" alt="Мистер Коул в аэропорту"></div>
+          <div class="speech" id="coleSpeech">«На контроле папка с документами точно была у меня. После этого я не выходил из терминала.»</div>
           <button id="newGame" class="ghost-btn small" type="button">Начать заново</button>
         </aside>
 
