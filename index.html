@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>LAST CALL — дело о пропавших документах</title>
+  <link rel="stylesheet" href="styles.css?v=20260830-3">
+</head>
+<body>
+  <main class="shell">
+    <section id="intro" class="intro-card">
+      <div class="intro-art">
+        <img class="case-hero" src="assets/mr-cole-airport-hero.png" alt="Мистер Коул в аэропорту Сиднея перед вылетом в Москву">
+      </div>
+      <div class="intro-copy">
+        <p class="eyebrow">ИНТЕРАКТИВНЫЙ ДЕТЕКТИВНЫЙ КВЕСТ ДЛЯ УЧИТЕЛЕЙ</p>
+        <h1>LAST CALL</h1>
+        <p class="subtitle">Дело о пропавших документах мистера Коула</p>
+        <p class="story">Мистер Коул — учитель из Австралии, который обожает путешествовать. Сегодня он летит в Россию, но не просто так, а преподавать английский. Паспортный контроль пройден, но у выхода на посадку Коул обнаруживает, что его паспорт и посадочный талон исчезли.</p>
+        <div class="case-facts">
+          <div><span>Последний подтверждённый факт</span><strong>16:03 — документы были у Коула</strong></div>
+          <div><span>Текущий выход</span><strong>B27 — рейс в Москву</strong></div>
+          <div><span>До закрытия посадки</span><strong>37 минут • до 17:17</strong></div>
+        </div>
+        <button id="startGame" class="primary-btn" type="button">Начать расследование</button>
+        <button id="resumeGame" class="ghost-btn hidden" type="button">Продолжить текущую игру</button>
+      </div>
+    </section>
+
+    <section id="game" class="game hidden" aria-live="polite">
+      <header class="game-header">
+        <div>
+          <p class="eyebrow">CASE LC-37</p>
+          <h2>Дело о пропавших документах</h2>
+        </div>
+        <div class="timer-box" aria-label="Оставшееся время">
+          <span>BOARDING CLOSES IN</span>
+          <strong id="timer">37:00</strong>
+        </div>
+      </header>
+
+      <div class="game-grid">
+        <aside class="cole-panel">
+          <div class="cole-game-art"><img class="case-hero" src="assets/mr-cole-airport-hero.png" alt="Мистер Коул в аэропорту"></div>
+          <div class="speech" id="coleSpeech">«На контроле папка с документами точно была у меня. После этого я не выходил из терминала.»</div>
+          <button id="newGame" class="ghost-btn small" type="button">Начать заново</button>
+        </aside>
+
+        <section class="investigation-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">ДОСКА РАССЛЕДОВАНИЯ</p>
+              <h3>Куда идём?</h3>
+            </div>
+            <div class="progress"><span id="clueCount">0</span> улик</div>
+          </div>
+          <div id="locations" class="locations"></div>
+          <div id="eventLog" class="event-log" aria-live="polite"></div>
+        </section>
+
+        <aside class="evidence-panel">
+          <div class="panel-heading compact">
+            <div>
+              <p class="eyebrow">EVIDENCE</p>
+              <h3>Улики</h3>
+            </div>
+          </div>
+          <button id="finalTheoryBtn" class="danger-btn" type="button">Выдвинуть версию</button>
+          <div id="evidenceList" class="evidence-list"></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden" role="presentation">
+    <section id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button id="closeModal" class="close-btn" type="button" aria-label="Закрыть">×</button>
+      <div id="modalContent"></div>
+    </section>
+  </div>
+
+  <script src="config.js?v=20260830-3"></script>
+  <script src="game-data.js?v=20260830-3"></script>
+  <script src="app.js?v=20260830-4"></script>
+</body>
+</html>
