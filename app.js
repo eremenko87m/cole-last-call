@@ -139,7 +139,7 @@
     let text = '«На контроле папка с документами точно была у меня. После этого я не выходил из терминала.»';
     if (state.flags.gateC4Seen) text = '«Ноа действительно передал мою папку сотруднице C4. После этого её маршрут продолжился уже без меня.»';
     if (state.flags.b12Seen) text = '«Когда DOC617 прибыл на B12, я уже был у другого выхода. В журнале появилась отметка R3.»';
-    if (state.flags.deliverySeen) text = '«В журнале доставки появилась ещё одна служебная отметка: SD-2.»';
+    if (state.flags.deliverySeen) text = '«DOC617 не дошёл до Passenger Assistance Hub. В журнале осталась служебная отметка.»';
     coleSpeechEl.textContent = text;
   }
 
@@ -296,7 +296,6 @@
       <h3>Мужчина с зелёным чемоданом</h3>
       <p>Он что-то поднимает из-под стула Коула и смотрит в сторону коридора. На уголке посадочного талона читаются:</p>
       <div class="document">…232<br>GATE C4</div>
-      <p>На уголке посадочного талона различимы только номер и выход.</p>
     `);
   }
 
@@ -305,9 +304,7 @@
     state.flags.infoBoard = true;
     maybeUnlockGateC4();
     saveState(); render();
-    const match = state.flags.cameraMan
-      ? '<div class="notice">На записи камеры видны «232 / C4». На табло этим данным соответствует <strong>SQ232 • Singapore • Gate C4</strong>.</div>'
-      : '';
+    const match = '';
     showModal(`
       <p class="eyebrow">FLIGHT INFORMATION • 16:20</p>
       <h3>Табло вылетов</h3>
@@ -320,7 +317,7 @@
     if (state.flags.cameraMan && state.flags.infoBoard) {
       state.flags.gateC4 = true;
       addEvidence('flightMatch');
-      addLog('Сопоставлены «232 / C4»: мужчина направлялся на SQ232 Singapore. Открыт Gate C4.');
+      addLog('Доступна новая точка проверки: Gate C4.');
     }
   }
 
@@ -373,7 +370,6 @@
       <p class="eyebrow">LOST & FOUND • 16:25</p>
       <h3>Карточка найденной вещи</h3>
       <div class="document">ITEM: DARK BLUE TRAVEL WALLET<br>FOUND: COFFEE CORNER<br>CONTENTS: BANK CARDS, DRIVER LICENCE<br>OWNER: MICHAEL HARRIS</div>
-      <p>Сверьте описание, содержимое и данные владельца с материалами дела.</p>
     `);
   }
 
@@ -437,12 +433,33 @@
     return meta[id];
   }
 
+  function witnessStatusLine(id, w, meta) {
+    const used = w.history.length;
+    if (id === 'barista') {
+      if (used === 0) return meta.intro;
+      if (used === 1) return '«У стойки становится людно. У вас ещё два вопроса.»';
+      if (used === 2) return '«У меня уже очередь. Я отвечу ещё только на один вопрос. Подумайте, что важно.»';
+      return '«Простите, мне нужно обслуживать клиентов.»';
+    }
+    if (id === 'noah') {
+      if (used === 0) return meta.intro;
+      if (used === 1) return '«Меня уже зовут на посадку. Отвечу ещё на один вопрос.»';
+      return '«Мне нужно выключить телефон и заходить в самолёт.»';
+    }
+    if (id === 'woman') {
+      if (used === 0) return meta.intro;
+      return '«Мне пора на посадку.»';
+    }
+    return meta.intro;
+  }
+
   function openWitness(id) {
     addVisited(id === 'barista' ? 'cafe' : id);
     saveState(); render();
     const w = state.witnesses[id];
     const meta = witnessMeta(id);
     const left = Math.max(0, w.limit - w.history.length);
+    const statusLine = witnessStatusLine(id, w, meta);
     const chat = w.history.map(({ q, a }) => `<div class="bubble user">${escapeHtml(q)}</div><div class="bubble npc">${escapeHtml(a)}</div>`).join('');
     const form = left > 0 ? `
       <form class="witness-form" id="witnessForm">
@@ -452,7 +469,7 @@
     showModal(`
       <p class="eyebrow">ДОПРОС СВИДЕТЕЛЯ</p>
       <h3>${escapeHtml(meta.title)}</h3>
-      <div class="witness-head"><span>${escapeHtml(meta.intro)}</span><span class="question-dots">${'●'.repeat(left)}${'○'.repeat(w.limit-left)}</span></div>
+      <div class="witness-head"><span>${escapeHtml(statusLine)}</span><span class="question-dots">${'●'.repeat(left)}${'○'.repeat(w.limit-left)}</span></div>
       <div class="chat" id="chatBox">${chat || '<div class="bubble npc">'+escapeHtml(meta.intro)+'</div>'}</div>
       ${form}
       <p class="notice">Если в одном сообщении задать несколько вопросов, свидетель отвечает только на первый.</p>
