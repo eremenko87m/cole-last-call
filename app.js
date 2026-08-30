@@ -27,6 +27,7 @@
 
   let state = loadState();
   let timerId = null;
+  let finalCheckInFlight = false;
 
   function freshState() {
     const now = Date.now();
@@ -106,7 +107,12 @@
   }
 
   function startNewGame() {
+    stopTimer();
+    finalCheckInFlight = false;
     state = freshState();
+    // Принудительно сбрасываем визуальное состояние финальной кнопки между попытками.
+    finalTheoryBtn.classList.add('hidden');
+    finalTheoryBtn.disabled = false;
     saveState();
     showGame();
     render();
@@ -126,13 +132,23 @@
     resumeGameBtn.classList.toggle('hidden', !resumable);
   }
 
+  function canOpenFinalTheory() {
+    if (!state || state.status !== 'active' || state.finalUsed) return false;
+    // DOC617 — фактическая улика, которая открывает вторую часть расследования.
+    // Используем её как основной источник истины, а phase2 оставляем для совместимости.
+    return state.evidence.includes('doc617') || state.flags.phase2 === true;
+  }
+
   function render() {
     if (!state) return;
+    // Самовосстановление сохранённой партии: если DOC617 уже найден, вторая фаза точно открыта.
+    if (state.evidence.includes('doc617')) state.flags.phase2 = true;
     renderLocations();
     renderEvidence();
     renderLogs();
     updateColeSpeech();
-    finalTheoryBtn.classList.toggle('hidden', !state.flags.phase2 || state.finalUsed || state.status !== 'active');
+    finalTheoryBtn.classList.toggle('hidden', !canOpenFinalTheory());
+    finalTheoryBtn.disabled = finalCheckInFlight;
   }
 
   function updateColeSpeech() {
@@ -330,6 +346,8 @@
     state.flags.phase2 = true;
     addLog('16:21 — Dr Noah Reed передал сотруднице Gate C4 найденную в Coffee Corner папку Коула.');
     saveState(); render();
+    // На этом этапе игрок уже может выдвинуть финальную версию.
+    if (canOpenFinalTheory()) finalTheoryBtn.classList.remove('hidden');
     showModal(`
       <p class="eyebrow">GATE C4 • FOUND DOCUMENT REPORT</p>
       <h3>Found Document Report</h3>
@@ -510,6 +528,8 @@
 
   function openFinalTheory() {
     if (!isActive()) return loseGame('Время истекло.');
+    if (!canOpenFinalTheory()) return;
+    if (finalCheckInFlight) return;
     const missingWarning = '';
     showModal(`
       <p class="eyebrow">FINAL THEORY</p>
@@ -527,16 +547,19 @@
   async function submitFinal(event) {
     event.preventDefault();
     if (!isActive()) return loseGame('Время истекло.');
-    if (state.finalUsed) return;
+    if (state.finalUsed || finalCheckInFlight) return;
     if (!apiConfigured()) return showInlineError('AI backend пока не настроен.');
     const answer = ($('finalAnswer')?.value || '').trim();
     if (answer.length < 25) return showInlineError('Версия слишком короткая. Восстановите всю цепочку событий.');
     const btn = event.target.querySelector('button');
     btn.disabled = true; btn.textContent = 'Проверяем версию…';
     try {
+      finalCheckInFlight = true;
+      render();
+      const result = await callApi({ action: 'checkFinal', answer });
+      finalCheckInFlight = false;
       state.finalUsed = true;
       saveState(); render();
-      const result = await callApi({ action: 'checkFinal', answer });
       if (result.correct) {
         winGame(result.rewardUrl, result.feedback);
       } else {
@@ -549,6 +572,7 @@
         render();
       }
     } catch (err) {
+      finalCheckInFlight = false;
       state.finalUsed = false;
       saveState(); render();
       showInlineError(err.message || 'Не удалось проверить версию.');
