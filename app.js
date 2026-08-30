@@ -3,7 +3,7 @@
 
   const CFG = window.APP_CONFIG || {};
   const DATA = window.GAME_DATA || { evidence: {} };
-  const STORAGE_KEY = 'cole-last-call-v2';
+  const STORAGE_KEY = 'cole-last-call-v3';
   const DURATION_MS = (Number(CFG.gameDurationMinutes) || 37) * 60 * 1000;
   const FINAL_CALL_LEFT_MS = (Number(CFG.finalCallMinutesLeft) || 10) * 60 * 1000;
   const GATE_CLOSING_LEFT_MS = (Number(CFG.gateClosingMinutesLeft) || 3) * 60 * 1000;
@@ -32,7 +32,7 @@
   function freshState() {
     const now = Date.now();
     return {
-      version: 2,
+      version: 3,
       status: 'active',
       startedAt: now,
       deadline: now + DURATION_MS,
@@ -48,6 +48,7 @@
         womanUnlocked: false,
         noahUnlocked: false,
         phase2: false,
+        b12Unlocked: false,
         b12Seen: false,
         routeR3Known: false,
         routesSeen: false,
@@ -60,9 +61,8 @@
         woman: { limit: 1, history: [] },
         noah: { limit: 2, history: [] }
       },
-      finalUsed: false,
       warnings: { finalCall: false, gateClosing: false },
-      logs: ['16:40 — у Gate B27 Коул обнаружил пропажу папки с документами.', '16:24 — выход на рейс в Москву изменён с B12 на B27.'],
+      logs: ['16:40 — у Gate B27 Коул обнаружил пропажу папки с документами.', '16:24 — выход рейса QF728 в Москву изменён с B12 на B27.'],
       rewardUrl: null
     };
   }
@@ -72,7 +72,7 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      if (!parsed || parsed.version !== 2) return null;
+      if (!parsed || parsed.version !== 3) return null;
       return parsed;
     } catch (_) {
       return null;
@@ -110,7 +110,7 @@
     stopTimer();
     finalCheckInFlight = false;
     state = freshState();
-    // В каждой новой партии финальная версия доступна сразу.
+    // Финальную версию можно проверять с самого начала и повторять, пока идёт таймер.
     finalTheoryBtn.classList.remove('hidden');
     finalTheoryBtn.disabled = false;
     saveState();
@@ -133,9 +133,7 @@
   }
 
   function canOpenFinalTheory() {
-    // Игрок может выдвинуть версию в любой момент активного расследования.
-    // Это намеренная игровая механика: поспешная версия может оказаться ошибочной.
-    return !!state && state.status === 'active' && !state.finalUsed;
+    return !!state && state.status === 'active';
   }
 
   function render() {
@@ -147,7 +145,7 @@
     renderLogs();
     updateColeSpeech();
     finalTheoryBtn.classList.toggle('hidden', !canOpenFinalTheory());
-    finalTheoryBtn.disabled = finalCheckInFlight;
+    finalTheoryBtn.disabled = finalCheckInFlight || state.status !== 'active';
   }
 
   function updateColeSpeech() {
@@ -170,8 +168,17 @@
     if (state.flags.gateC4) list.push({ id: 'gateC4', title: 'Gate C4', desc: 'Служебная запись сотрудника', icon: '🛫' });
     if (state.flags.noahUnlocked) list.push({ id: 'noah', title: 'Dr Noah Reed', desc: witnessDesc('noah', 'До 2 вопросов'), icon: '👨‍🏫' });
 
+    // B12 появляется после просмотра мужчины с зелёным чемоданом и никак не зависит от женщины.
+    if (state.flags.b12Unlocked || state.flags.phase2) {
+      list.push({
+        id: 'b12',
+        title: 'Старый Gate B12',
+        desc: state.flags.gateC4Seen ? 'Новая служебная запись по DOC617' : 'Старый выход рейса QF728',
+        icon: '🛫'
+      });
+    }
+
     if (state.flags.phase2) {
-      list.push({ id: 'b12', title: 'Старый Gate B12', desc: 'Куда отправили DOC617', icon: '🛫' });
       list.push({ id: 'b27', title: 'Новый Gate B27', desc: 'Проверить, поступали ли документы', icon: '✈️' });
       list.push({ id: 'lostFound', title: 'Lost & Found', desc: 'Найден тёмно-синий предмет', icon: '🧳' });
       list.push({ id: 'protocol', title: 'Правила безопасности', desc: 'Что делают с невручёнными документами', icon: '📑' });
@@ -230,7 +237,7 @@
     showModal(`
       <p class="eyebrow">СРОЧНО • SYDNEY AIRPORT</p>
       <h3>Папка с документами исчезла внутри терминала</h3>
-      <p>В 16:03 Коул прошёл паспортный контроль с документами. В 16:24 его рейс перенесли с B12 на B27. В 16:40, уже у нового выхода, Коул обнаружил, что дорожная папка с паспортом и посадочным талоном исчезла.</p>
+      <p>В 16:03 Коул прошёл паспортный контроль с документами. В 16:24 рейс QF728 в Москву перенесли с B12 на B27. В 16:40, уже у нового выхода, Коул обнаружил, что дорожная папка с паспортом и посадочным талоном исчезла.</p>
       <div class="notice"><strong>Правило:</strong> вы сами выбираете порядок проверки локаций. У некоторых свидетелей мало времени, поэтому число вопросов ограничено. Таймер идёт в реальном времени.</div>
       <div class="action-row"><button class="action-btn accent" data-close>Начать поиск</button></div>
     `);
@@ -302,6 +309,7 @@
 
   function zoomMan() {
     state.flags.cameraMan = true;
+    state.flags.b12Unlocked = true;
     addEvidence('cameraMan');
     addLog('На посадочном талоне мужчины удалось разобрать только «232 / C4».');
     maybeUnlockGateC4();
@@ -323,7 +331,7 @@
     showModal(`
       <p class="eyebrow">FLIGHT INFORMATION • 16:20</p>
       <h3>Табло вылетов</h3>
-      <div class="document">SQ232 • SINGAPORE • GATE C4 • BOARDING 16:32<br>NZ108 • AUCKLAND • GATE A9 • 16:41<br>JL406 • TOKYO • GATE D6 • 16:48<br>MOSCOW • GATE B12 • DEPARTURE 17:30</div>
+      <div class="document">SQ232 • SINGAPORE • GATE C4 • BOARDING 16:32<br>NZ108 • AUCKLAND • GATE A9 • 16:41<br>JL406 • TOKYO • GATE D6 • 16:48<br>QF728 • MOSCOW • GATE B12 • DEPARTURE 17:30</div>
       ${match}
     `);
   }
@@ -345,7 +353,7 @@
     state.flags.phase2 = true;
     addLog('16:21 — Dr Noah Reed передал сотруднице Gate C4 найденную в Coffee Corner папку Коула.');
     saveState(); render();
-    // Gate C4 открывает вторую фазу расследования; кнопка версии уже доступна с начала игры.
+    // Gate C4 открывает вторую фазу расследования. Женщина в зелёном на эту ветку не влияет.
     showModal(`
       <p class="eyebrow">GATE C4 • FOUND DOCUMENT REPORT</p>
       <h3>Found Document Report</h3>
@@ -356,16 +364,29 @@
   }
 
   function openB12() {
+    // B12 доступен уже после мужчины с зелёным чемоданом, но защищённый журнал
+    // DOC617 становится осмысленным только после отчёта Gate C4.
+    if (!state.flags.gateC4Seen) {
+      showModal(`
+        <p class="eyebrow">GATE B12 • FLIGHT RECORD</p>
+        <h3>Старый Gate B12</h3>
+        <div class="document">QF728 • MOSCOW<br>ORIGINAL GATE: B12<br>16:24 — GATE CHANGED TO B27<br>MR COLE: NOT PRESENT AT B12</div>
+        <p>Это прежний выход рейса Коула. Служебная запись о найденных документах здесь пока не идентифицирована.</p>
+      `);
+      return;
+    }
+
     addVisited('b12');
     state.flags.b12Seen = true;
     state.flags.routeR3Known = true;
-    addEvidence('b12'); addEvidence('r3');
+    addEvidence('b12');
+    addEvidence('r3');
     addLog('16:29 — DOC617 отмечен на B12 как U/D; в 16:30 ему назначен маршрут R3.');
     saveState(); render();
     showModal(`
       <p class="eyebrow">GATE B12 • SECURE LOG</p>
       <h3>Secure Log • B12</h3>
-      <div class="document">16:29:11 — DOC617 ARRIVED / B12<br>OWNER NOT PRESENT<br>FLIGHT RELOCATED TO B27<br>STATUS: U/D — UNDELIVERED<br>16:30 — ASSIGNED ROUTE: R3</div>
+      <div class="document">QF728 • MOSCOW<br>16:29:11 — DOC617 ARRIVED / B12<br>OWNER NOT PRESENT<br>FLIGHT RELOCATED TO B27<br>STATUS: U/D — UNDELIVERED<br>16:30 — ASSIGNED ROUTE: R3</div>
       <p>В журнале следующая отметка после U/D — <strong>R3</strong>.</p>
     `);
   }
@@ -375,7 +396,7 @@
     showModal(`
       <p class="eyebrow">NEW GATE B27</p>
       <h3>Gate B27 • Incoming Log</h3>
-      <div class="document">MR COLE ARRIVED: 16:28<br>SECURE DOCUMENT RECEIVED: NONE</div>
+      <div class="document">QF728 • MOSCOW<br>MR COLE ARRIVED: 16:28<br>SECURE DOCUMENT RECEIVED: NONE</div>
       <p>В реестре B27 документ DOC617 не зарегистрирован.</p>
     `);
   }
@@ -526,53 +547,53 @@
 
   function openFinalTheory() {
     if (!isActive()) return loseGame('Время истекло.');
-    if (!canOpenFinalTheory()) return;
     if (finalCheckInFlight) return;
     showModal(`
       <p class="eyebrow">FINAL THEORY</p>
       <h3>Где сейчас документы мистера Коула?</h3>
       <p>Назовите <strong>точное текущее место</strong>. Восстанавливать всю цепочку событий не нужно.</p>
       <form id="finalForm" class="final-form">
-        <textarea id="finalAnswer" maxlength="300" required placeholder="Точное место…"></textarea>
+        <textarea id="finalAnswer" maxlength="300" required placeholder="Например: название стойки или служебный код…"></textarea>
         <div class="action-row"><button class="action-btn accent" type="submit">Проверить версию</button></div>
       </form>
-      <p class="notice">Финальная версия — одна попытка на партию. Если место указано верно, расследование завершено.</p>
+      <p class="notice">Версию можно проверять несколько раз, пока идёт таймер. Неверный ответ не завершает расследование.</p>
     `, () => $('finalForm').addEventListener('submit', submitFinal));
   }
 
   async function submitFinal(event) {
     event.preventDefault();
     if (!isActive()) return loseGame('Время истекло.');
-    if (state.finalUsed || finalCheckInFlight) return;
+    if (finalCheckInFlight) return;
     if (!apiConfigured()) return showInlineError('AI backend пока не настроен.');
+
     const answer = ($('finalAnswer')?.value || '').trim();
-    if (answer.length < 3) return showInlineError('Укажите точное место, где сейчас находятся документы.');
+    if (!answer) return showInlineError('Напишите место, где, по вашей версии, сейчас находятся документы.');
+
     const btn = event.target.querySelector('button');
-    btn.disabled = true; btn.textContent = 'Проверяем версию…';
+    btn.disabled = true;
+    btn.textContent = 'Проверяем версию…';
+
     try {
       finalCheckInFlight = true;
       render();
       const result = await callApi({ action: 'checkFinal', answer });
       finalCheckInFlight = false;
-      state.finalUsed = true;
-      saveState(); render();
+      render();
+
       if (result.correct) {
         winGame(result.rewardUrl, result.feedback);
-      } else {
-        state.status = 'lost';
-        state.finishedAt = Date.now();
-        saveState(); stopTimer();
-        showModal(`
-          <div class="warning-screen"><p class="eyebrow">VERSION REJECTED</p><div class="big">✕</div><h3>Место не подтверждено</h3><p>${escapeHtml(result.feedback || 'Указанное место не совпадает с текущей служебной отметкой.')}</p><div class="notice">Эта попытка завершена. Можно сразу начать новое расследование — снова с 37:00.</div><div class="action-row"><button class="action-btn accent" data-action="restart">Начать заново</button></div></div>
-        `);
-        render();
+        return;
       }
+
+      showInlineError(result.feedback || 'Это место не подтверждается найденными данными. Можно продолжить расследование и попробовать снова.');
+      btn.disabled = false;
+      btn.textContent = 'Проверить версию';
     } catch (err) {
       finalCheckInFlight = false;
-      state.finalUsed = false;
-      saveState(); render();
+      render();
       showInlineError(err.message || 'Не удалось проверить версию.');
-      btn.disabled = false; btn.textContent = 'Проверить версию';
+      btn.disabled = false;
+      btn.textContent = 'Проверить версию';
     }
   }
 
@@ -585,7 +606,7 @@
       ? `<div class="reward-card"><strong>FOR TEACHERS ONLY</strong><p>Секретный файл Коула разблокирован только после успешного расследования.</p><a class="reward-link" href="${escapeAttr(rewardUrl)}" target="_blank" rel="noopener">Скачать подарок PDF</a></div>`
       : '<div class="notice">Победа засчитана, но REWARD_URL ещё не настроен в Yandex Cloud Function.</div>';
     showModal(`
-      <div class="warning-screen"><p class="eyebrow">DOC617 FOUND • BOARDING APPROVED</p><div class="big">✓</div><h3>Документы найдены</h3><p>${escapeHtml(feedback || 'Вся цепочка восстановлена верно.')}</p><p>Мистер Коул успевает на рейс в Москву.</p>${reward}<div class="action-row"><button class="action-btn" data-action="restart">Сыграть ещё раз</button></div></div>
+      <div class="warning-screen"><p class="eyebrow">DOC617 FOUND • BOARDING APPROVED</p><div class="big">✓</div><h3>Документы найдены</h3><p>${escapeHtml(feedback || 'Точное местонахождение документов установлено.')}</p><p>Мистер Коул успевает на рейс QF728 в Москву.</p>${reward}<div class="action-row"><button class="action-btn" data-action="restart">Сыграть ещё раз</button></div></div>
     `);
   }
 
