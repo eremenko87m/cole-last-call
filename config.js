@@ -1,6 +1,6 @@
 // После создания Yandex Cloud Function замените URL ниже.
 window.APP_CONFIG = {
-  apiUrl: 'PASTE_YANDEX_FUNCTION_URL_HERE',
+  apiUrl: 'https://functions.yandexcloud.net/d4et030v1en65h2ah9ti',
   gameDurationMinutes: 37,
   finalCallMinutesLeft: 10,
   gateClosingMinutesLeft: 3
